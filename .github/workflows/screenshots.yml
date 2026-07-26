@@ -34,6 +34,7 @@ jobs:
       - name: Install idb
         run: |
           brew tap facebook/fb
+          brew trust facebook/fb
           brew install idb-companion
           pip3 install fb-idb --break-system-packages
 
