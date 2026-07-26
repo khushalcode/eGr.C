@@ -69,6 +69,7 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3
 
 dependency_overrides:
+  device_info_plus: 11.5.0
   http: ^1.0.0
   intl: ^0.17.0
   #mobile_scanner: 5.2.3
