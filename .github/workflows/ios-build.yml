@@ -58,7 +58,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Print :Name" $RUNNER_TEMP/profile.plist
           /usr/libexec/PlistBuddy -c "Print :UUID" $RUNNER_TEMP/profile.plist
           /usr/libexec/PlistBuddy -c "Print :TeamIdentifier" $RUNNER_TEMP/profile.plist
-          /usr/libexec/PlistBuddy -c "Print :application-identifier" $RUNNER_TEMP/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :application-identifier" $RUNNER_TEMP/profile.plist || true
 
           echo "----- Code signing identities in keychain -----"
           security find-identity -v -p codesigning
@@ -75,5 +75,6 @@ jobs:
         with:
           name: otw-grocers-ipa
           path: build/ios/ipa/*.ipa
+
 
 
