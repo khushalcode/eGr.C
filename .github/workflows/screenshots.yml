@@ -1,0 +1,80 @@
+name: App Store Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: |
+          flutter clean
+          flutter pub get
+          FILE=$(find $HOME/.pub-cache/hosted -path "*/quill_html_editor-*/pubspec.yaml" 2>/dev/null | head -1)
+          if [ -n "$FILE" ]; then
+            echo "Patching: $FILE"
+            sed -i '' '/default_package: quill_html_editor/d' "$FILE"
+            flutter pub get
+          else
+            echo "quill_html_editor not found, skipping patch"
+          fi
+
+      - name: Build for simulator
+        run: flutter build ios --simulator --debug
+
+      - name: Install idb
+        run: |
+          brew tap facebook/fb
+          brew install idb-companion
+          pip3 install fb-idb --break-system-packages
+
+      - name: Boot iPhone 16 Pro Max (6.9-inch)
+        run: |
+          UDID=$(xcrun simctl list devices available | grep "iPhone 16 Pro Max" | head -1 | grep -oE '[0-9A-F-]{36}')
+          echo "UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          idb_companion --udid "$UDID" &
+          sleep 5
+
+      - name: Find app bundle id
+        run: |
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" ios/Runner/Info.plist 2>/dev/null || echo "")
+          echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
+          echo "Detected bundle id: $BUNDLE_ID"
+
+      - name: Install and launch app
+        run: |
+          mkdir -p screenshots
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
+          xcrun simctl launch "$UDID" "$BUNDLE_ID"
+          sleep 4
+          xcrun simctl io "$UDID" screenshot screenshots/01.png
+
+      - name: Capture subsequent auto-transitions
+        run: |
+          sleep 3
+          xcrun simctl io "$UDID" screenshot screenshots/02.png
+          sleep 3
+          xcrun simctl io "$UDID" screenshot screenshots/03.png
+          sleep 3
+          xcrun simctl io "$UDID" screenshot screenshots/04.png
+
+      - name: Dump accessibility tree of final screen
+        run: |
+          idb ui describe-all --udid "$UDID" > screenshots/accessibility_tree.json || echo "idb describe failed, continuing"
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-store-screenshots
+          path: screenshots/*
