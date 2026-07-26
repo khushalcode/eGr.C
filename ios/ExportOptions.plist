@@ -5,7 +5,7 @@
     <key>method</key>
     <string>app-store</string>
     <key>teamID</key>
-    <string>GYY8K392ZW</string>
+    <string>88MWA74MV9</string>
     <key>signingStyle</key>
     <string>manual</string>
     <key>signingCertificate</key>
@@ -23,3 +23,4 @@
     <false/>
 </dict>
 </plist>
+
