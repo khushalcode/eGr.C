@@ -27,7 +27,7 @@ export 'package:google_fonts/google_fonts.dart';
 export 'package:google_maps_flutter/google_maps_flutter.dart';
 export 'package:image_cropper/image_cropper.dart';
 export 'package:image_picker/image_picker.dart';
-export 'package:open_file/open_file.dart';
+export 'package:open_file/open_file.dart' hide ResultType;
 export 'package:package_info_plus/package_info_plus.dart';
 export 'package:path_provider/path_provider.dart';
 // export 'package:paytm_allinonesdk/paytm_allinonesdk.dart';
@@ -286,3 +286,4 @@ export 'package:vibration/vibration.dart';
 export 'package:webview_flutter/webview_flutter.dart';
 export 'package:project/helper/utils/labelKeys.dart';
 export 'package:project/helper/utils/appAssets.dart';
+
