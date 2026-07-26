@@ -48,6 +48,21 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
 
+      - name: Debug signing info
+        run: |
+          echo "----- Installed provisioning profiles -----"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          echo "----- Profile embedded metadata -----"
+          security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision > $RUNNER_TEMP/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :Name" $RUNNER_TEMP/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :UUID" $RUNNER_TEMP/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :TeamIdentifier" $RUNNER_TEMP/profile.plist
+          /usr/libexec/PlistBuddy -c "Print :application-identifier" $RUNNER_TEMP/profile.plist
+
+          echo "----- Code signing identities in keychain -----"
+          security find-identity -v -p codesigning
+
       - name: Build IPA
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -60,4 +75,5 @@ jobs:
         with:
           name: otw-grocers-ipa
           path: build/ios/ipa/*.ipa
+
 
