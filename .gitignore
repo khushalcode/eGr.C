@@ -123,3 +123,8 @@ app.*.symbols
 
 # FVM Version Cache
 .fvm/
+android/app/release/
+build/
+*.aab
+*.apk
+*.ipa
