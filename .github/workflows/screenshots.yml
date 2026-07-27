@@ -29,23 +29,8 @@ jobs:
           else
             echo "quill_html_editor not found, skipping patch"
           fi
-          python3 - <<'PYEOF'
-import re
-path = "ios/Podfile"
-with open(path) as f:
-    content = f.read()
-
-marker = "flutter_additional_ios_build_settings(target)"
-patch = "\n      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'"
-
-if "EXCLUDED_ARCHS[sdk=iphonesimulator*]" not in content:
-    content = content.replace(marker, marker + patch, 1)
-    with open(path, "w") as f:
-        f.write(content)
-    print("Patched Podfile with simulator arm64 exclusion")
-else:
-    print("Podfile already patched")
-PYEOF
+          sed -i '' "/flutter_additional_ios_build_settings(target)/a\\
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'" ios/Podfile
           cd ios && pod deintegrate && pod install && cd ..
 
       - name: Build for simulator
