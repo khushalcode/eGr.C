@@ -18,6 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           flutter clean
+          rm -rf ios/Pods ios/Podfile.lock
           flutter pub get
           DIR=$(ls -d $HOME/.pub-cache/hosted/pub.dev/quill_html_editor-* 2>/dev/null | head -1)
           if [ -n "$DIR" ]; then
@@ -28,6 +29,7 @@ jobs:
           else
             echo "quill_html_editor not found, skipping patch"
           fi
+          cd ios && pod deintegrate && pod install && cd ..
 
       - name: Build for simulator
         run: flutter build ios --simulator --debug
