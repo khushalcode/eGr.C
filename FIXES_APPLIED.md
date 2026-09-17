@@ -136,9 +136,63 @@ Additional iPad-specific risks:
 - `android/app/src/main/AndroidManifest.xml` — `android:label` set to
   `OTW Grocery App` (kept consistent across platforms).
 
-### Files changed
+### Why the first submission still showed "eGrocer" on the device (v2 fix)
+Apple's reviewer reported the SAME name mismatch on Sep 14, 2026 even after
+the first fix. Investigation showed:
+- The `Info.plist` change was correct, BUT
+- Xcode's build settings can override `Info.plist` values via
+  `INFOPLIST_KEY_CFBundleDisplayName`. When the user re-archived the app
+  in Xcode, the OLD `eGrocer` value was still being inherited from the
+  cached build settings / DerivedData.
+- The build number was not bumped, so App Store Connect may have used
+  a cached `.ipa` from the previous submission.
+
+### Additional fix (v2)
+1. Added `INFOPLIST_KEY_CFBundleDisplayName = "OTW Grocery App"` directly
+   as a build setting in all three target build configurations (Debug,
+   Release, Profile) in `ios/Runner.xcodeproj/project.pbxproj`. This
+   forces Xcode to inject the correct display name into the final
+   `Info.plist` regardless of any stale cached values.
+2. Bumped `CURRENT_PROJECT_VERSION` from `13` → `14` in all three target
+   configurations in `project.pbxproj`.
+3. Bumped the Flutter build number in `pubspec.yaml` from `1.0.0+1` →
+   `1.0.0+2` so `FLUTTER_BUILD_NUMBER` is regenerated and a NEW archive
+   must be uploaded to App Store Connect.
+
+### Files changed (v1 + v2)
 - `ios/Runner/Info.plist`
 - `android/app/src/main/AndroidManifest.xml`
+- `ios/Runner.xcodeproj/project.pbxproj`
+- `pubspec.yaml`
+
+### MANDATORY build steps before re-submitting (do ALL of these)
+1. Replace your local project with this zip (do not merge — overwrite).
+2. `cd` into the project root and run:
+   ```
+   flutter clean
+   flutter pub get
+   ```
+3. iOS only — refresh the CocoaPods cache so stale `Info.plist` values
+   don't leak into the new build:
+   ```
+   cd ios
+   rm -rf Pods Podfile.lock
+   pod cache clean --all
+   pod install
+   cd ..
+   ```
+4. Open `ios/Runner.xcworkspace` in Xcode and do
+   **Product → Clean Build Folder** (`Cmd + Shift + K`).
+5. In Xcode, confirm the display name:
+   - Select the **Runner** target → **General** tab →
+     **Identity** → **Name** should read **OTW Grocery App**.
+   - Select **Build Settings** → search for `CFBundleDisplayName` →
+     value should be **OTW Grocery App** in all three configurations.
+6. **Product → Archive** to produce a fresh `.xcarchive`.
+7. In the Xcode Organizer window, click **Distribute App → App Store Connect**.
+   Upload the NEW archive — do NOT select an old build from the list.
+8. In App Store Connect, ensure the new uploaded build (build #14 / +2)
+   is selected as the build for the next review, then click **Submit for Review**.
 
 ---
 

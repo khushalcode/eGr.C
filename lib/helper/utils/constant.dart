@@ -10,7 +10,7 @@ class Constant {
   static String packageName = "com.bshgrocery.customer";
   static String appStoreUrl = "";
   static String playStoreUrl = "https://play.google.com/store/apps/details?id=com.bshgrocery.customer";
-  static String appName = "BSH Grocery";
+  static String appName = "OTW Grocery App";
   static int minimumRequiredMobileNumberLength = 7;
   static int messageDisplayDuration = 3500;
   static int defaultImagesLoadLimitAtOnce = 50;
