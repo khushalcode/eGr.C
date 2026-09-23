@@ -131,7 +131,7 @@ class _LoginAccountState extends State<OtpVerificationScreen> {
   }
 
   verifyOtp() async {
-    if (context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1") {
+    if ((context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1") {
       isLoading = true;
       PhoneAuthCredential credential = PhoneAuthProvider.credential(
           verificationId: resendOtpVerificationId.isNotEmpty
@@ -247,7 +247,7 @@ class _LoginAccountState extends State<OtpVerificationScreen> {
                     }
                   }
                 });
-              } else if (context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1") {
+              } else if ((context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1") {
                 firebaseLoginProcess();
               }
               setState(() {});
@@ -268,7 +268,7 @@ class _LoginAccountState extends State<OtpVerificationScreen> {
         ApiAndParams.platform: Platform.isAndroid ? "android" : "ios",
         ApiAndParams.fcmToken:
         Constant.session.getData(SessionManager.keyFCMToken),
-        ApiAndParams.phoneAuthType: (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword=="1")?"phone_auth_password":"phone_auth_otp",
+        ApiAndParams.phoneAuthType: ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0")=="1")?"phone_auth_password":"phone_auth_otp",
       };
 
       await context
@@ -351,7 +351,7 @@ class _LoginAccountState extends State<OtpVerificationScreen> {
       ApiAndParams.platform: Platform.isAndroid ? "android" : "ios",
       ApiAndParams.fcmToken:
       Constant.session.getData(SessionManager.keyFCMToken),
-      ApiAndParams.phoneAuthType: (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword=="1")?"phone_auth_password":"phone_auth_otp",
+      ApiAndParams.phoneAuthType: ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0")=="1")?"phone_auth_password":"phone_auth_otp",
     };
 
     await context

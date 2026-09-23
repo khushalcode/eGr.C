@@ -131,7 +131,7 @@ class _ForgotPasswordState extends State<ForgotPasswordScreen> {
           );
           return;
         }
-        if (context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1") {
+        if ((context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1") {
           try {
             await firebaseAuth.verifyPhoneNumber(
               timeout: Duration(minutes: 1, seconds: 30),
@@ -236,7 +236,7 @@ class _ForgotPasswordState extends State<ForgotPasswordScreen> {
   }
 
   Future/* <bool> */ verifyOtp() async {
-    if (context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1") {
+    if ((context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1") {
       isLoading = true;
       PhoneAuthCredential credential = PhoneAuthProvider.credential(
           verificationId: resendOtpVerificationId.isNotEmpty ? resendOtpVerificationId : otpVerificationId, smsCode: pinController.text);
@@ -252,7 +252,7 @@ class _ForgotPasswordState extends State<ForgotPasswordScreen> {
           ApiAndParams.password: editPasswordTextEditingController.text,
           ApiAndParams.passwordConfirmation: editConfirmPasswordTextEditingController.text,
           ApiAndParams.type: "phone",
-          ApiAndParams.otpVerifyMethod: context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1" ? "firebase" : "twilio"
+          ApiAndParams.otpVerifyMethod: (context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1" ? "firebase" : "twilio"
         }).then(
           (value) {
             isLoading = false;

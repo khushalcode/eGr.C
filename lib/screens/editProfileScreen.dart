@@ -130,7 +130,7 @@ class _EditProfileState extends State<EditProfile> {
         );
         return;
       }
-      if (context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1") {
+      if ((context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1") {
         try {
           await firebaseAuth.verifyPhoneNumber(
             timeout: Duration(minutes: 1, seconds: 30),
@@ -215,7 +215,7 @@ class _EditProfileState extends State<EditProfile> {
   }
 
   Future verifyOtp() async {
-    if (context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1") {
+    if ((context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1") {
       isLoading = true;
       PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: resendOtpVerificationId.isNotEmpty ? resendOtpVerificationId : otpVerificationId,
@@ -312,8 +312,20 @@ class _EditProfileState extends State<EditProfile> {
                 callback: () async {
                   try {
                     if (await fieldValidation()) {
-                      _formKey.currentState!.save();
-                      if (_formKey.currentState!.validate()) {
+                      // [iPad/iOS 27 crash fix] Guard _formKey.currentState
+                      // — can be null on slow iPad hardware if the form
+                      // hasn't been built yet.
+                      final formState = _formKey.currentState;
+                      if (formState == null) {
+                        showMessage(
+                          context,
+                          getTranslatedValue(context, somethingWentWrongLabel),
+                          MessageType.warning,
+                        );
+                        return;
+                      }
+                      formState.save();
+                      if (formState.validate()) {
                         widget.loginParams?[ApiAndParams.name] = editUserNameTextEditingController.text.trim();
 
                         if (widget.loginParams?[ApiAndParams.type] == "phone" || Constant.session.getData(SessionManager.keyLoginType) == "phone") {
@@ -531,7 +543,7 @@ class _EditProfileState extends State<EditProfile> {
           SizedBox(height: Constant.size15),
           mobileNoWidget(context),
           if (widget.from == "email_register" ||
-              ( /* widget.from == "mobile_register" &&  */ (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword ==
+              ( /* widget.from == "mobile_register" &&  */ ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") ==
                   "1")) /*  || widget.from == "register" */ ) ...[
             SizedBox(height: Constant.size15),
             ChangeNotifierProvider<PasswordShowHideProvider>(
@@ -541,7 +553,7 @@ class _EditProfileState extends State<EditProfile> {
                   return editBoxWidget(
                     context,
                     editPasswordTextEditingController,
-                    (widget.from == "email_register" || (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1"))
+                    (widget.from == "email_register" || ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1"))
                         ? (value) => emptyValidation(value)
                         : (value) => optionalValidation(value),
                     getTranslatedValue(context, passwordLabel),
@@ -574,7 +586,7 @@ class _EditProfileState extends State<EditProfile> {
                   return editBoxWidget(
                     context,
                     editConfirmPasswordTextEditingController,
-                    (widget.from == "email_register" || (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1"))
+                    (widget.from == "email_register" || ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1"))
                         ? (value) => validateConfirmPassword(value, editPasswordTextEditingController.text)
                         : (value) => optionalValidation(value),
                     getTranslatedValue(context, confirmPasswordLabel),

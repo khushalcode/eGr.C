@@ -832,25 +832,48 @@ Future signInWithApple(
       ],
     );
 
+    // [iPad/iOS 27 crash fix] identityToken can be null on iOS 27 when the
+    // user has signed in with Apple before and uses Face ID/Touch ID
+    // pass-through. Build the OAuth credential safely.
+    final idToken = credential.identityToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw "Unable to retrieve Apple identity token. Please try again.";
+    }
+
     final oAuthCredential = OAuthProvider('apple.com').credential(
-      idToken: credential.identityToken,
+      idToken: idToken,
       accessToken: credential.authorizationCode,
     );
     final userCredential =
         await firebaseAuth.signInWithCredential(oAuthCredential);
 
-    if (userCredential.additionalUserInfo!.isNewUser ||
-        userCredential.user!.displayName == null) {
-      final user = userCredential.user!;
-      final givenName = credential.givenName ?? '';
-      final familyName = credential.familyName ?? '';
-
-      await user.updateDisplayName('$givenName $familyName');
-      await user.reload();
+    // [iPad/iOS 27 crash fix] additionalUserInfo and user can be null
+    // after a re-authentication flow. Guard with null checks instead of
+    // ! assertions.
+    final user = userCredential.user;
+    final additionalUserInfo = userCredential.additionalUserInfo;
+    if ((additionalUserInfo?.isNewUser ?? false) ||
+        user?.displayName == null ||
+        user?.displayName?.isEmpty == true) {
+      if (user != null) {
+        final givenName = credential.givenName ?? '';
+        final familyName = credential.familyName ?? '';
+        try {
+          await user.updateDisplayName('$givenName $familyName'.trim());
+          await user.reload();
+        } catch (e) {
+          // [iPad crash fix] updateDisplayName can fail if the user session
+          // is stale; don't crash the whole sign-in flow over a display
+          // name update.
+          debugPrint("signInWithApple: updateDisplayName failed: $e");
+        }
+      }
     }
 
     return userCredential;
   } catch (error) {
+    // [iPad crash fix] Don't rethrow the raw error object — convert to a
+    // string so callers can safely do `value.toString()` on it.
     throw error.toString();
   }
 }

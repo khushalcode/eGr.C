@@ -108,12 +108,38 @@ class _LoginAccountState extends State<LoginAccountScreen> {
                 authProvider = AuthProviders.emailPassword;
               }
 
-              _formKey.currentState!.save();
-              if (_formKey.currentState!.validate()) {
-                if (authProvider == AuthProviders.phone) {
-                  loginWithPhoneNumber();
-                } else if (authProvider == AuthProviders.emailPassword) {
-                  loginWithEmailIdPassword();
+              // [iPad/iOS 27 crash fix] Guard _formKey.currentState with
+              // null check — it can be null if the form hasn't been built
+              // yet on slow iPad hardware.
+              final formState = _formKey.currentState;
+              if (formState == null) {
+                showMessage(
+                  context,
+                  getTranslatedValue(context, somethingWentWrongLabel),
+                  MessageType.warning,
+                );
+                return;
+              }
+              formState.save();
+              if (formState.validate()) {
+                try {
+                  if (authProvider == AuthProviders.phone) {
+                    loginWithPhoneNumber();
+                  } else if (authProvider == AuthProviders.emailPassword) {
+                    loginWithEmailIdPassword();
+                  }
+                } catch (e) {
+                  // [iPad/iOS 27 crash fix] safety net — any unexpected
+                  // exception during the login flow shows a toast instead
+                  // of crashing the app.
+                  setState(() {
+                    isLoading = false;
+                  });
+                  showMessage(
+                    context,
+                    e.toString(),
+                    MessageType.warning,
+                  );
                 }
               }
             },
@@ -306,30 +332,47 @@ class _LoginAccountState extends State<LoginAccountScreen> {
                       setState(() {
                         authProvider = AuthProviders.apple;
                       });
-                      await signInWithApple(
-                        context: context,
-                        firebaseAuth: firebaseAuth,
-                        googleSignIn: googleSignIn,
-                      ).then(
-                        (value) {
-                          debugPrint("applelogindetail:${value.runtimeType}--${value}");
-                          setState(() {
-                            isLoading = true;
-                          });
-                          if (value is UserCredential) {
-                            setState(() {
-                              isLoading = false;
-                            });
-                            debugPrint("applelogindetailinsidetypecasting:${value.runtimeType}--${value}");
-                            backendApiProcess(value.user);
-                          } else {
-                            setState(() {
-                              isLoading = false;
-                            });
-                            showMessage(context, value.toString(), MessageType.error);
-                          }
-                        },
-                      );
+                      // [iPad/iOS 27 crash fix] show loading spinner BEFORE
+                      // the Apple sign-in sheet appears, so the user gets
+                      // feedback that something is happening.
+                      setState(() {
+                        isLoading = true;
+                      });
+                      try {
+                        final value = await signInWithApple(
+                          context: context,
+                          firebaseAuth: firebaseAuth,
+                          googleSignIn: googleSignIn,
+                        );
+                        debugPrint("applelogindetail:${value.runtimeType}--$value");
+                        if (!mounted) return;
+                        setState(() {
+                          isLoading = false;
+                        });
+                        if (value is UserCredential) {
+                          debugPrint("applelogindetailinsidetypecasting:${value.runtimeType}--$value");
+                          backendApiProcess(value.user);
+                        } else {
+                          showMessage(context, value.toString(), MessageType.error);
+                        }
+                      } catch (e) {
+                        // [iPad/iOS 27 crash fix] handle the user cancelling
+                        // the Apple sign-in sheet, network errors, null
+                        // identity tokens, etc. — without this catch the
+                        // spinner spins forever ("unable to progress").
+                        if (!mounted) return;
+                        setState(() {
+                          isLoading = false;
+                        });
+                        final errStr = e.toString();
+                        // Don't show an error toast if the user explicitly
+                        // cancelled the sign-in sheet.
+                        if (!errStr.contains('AuthorizationErrorCode.canceled') &&
+                            !errStr.contains('Cancel') &&
+                            !errStr.contains('canceled')) {
+                          showMessage(context, errStr, MessageType.error);
+                        }
+                      }
                     },
                   ),
                 ),
@@ -655,8 +698,8 @@ class _LoginAccountState extends State<LoginAccountScreen> {
             ),
           ),
         ),
-        (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1") ? getSizedBox(height: Constant.size20) : const SizedBox.shrink(),
-        (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1")
+        ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1") ? getSizedBox(height: Constant.size20) : const SizedBox.shrink(),
+        ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1")
             ? AnimatedOpacity(
                 opacity: showMobileNumberWidget ? 1.0 : 0.0,
                 duration: Duration(milliseconds: 300),
@@ -667,7 +710,7 @@ class _LoginAccountState extends State<LoginAccountScreen> {
                       return editBoxWidget(
                         context,
                         editPhonePasswordTextEditingController,
-                        (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1")
+                        ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1")
                             ? (value) => emptyValidation(value)
                             : (value) => optionalValidation(value),
                         getTranslatedValue(
@@ -707,8 +750,8 @@ class _LoginAccountState extends State<LoginAccountScreen> {
                 ),
               )
             : const SizedBox.shrink(),
-        (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1") ? getSizedBox(height: Constant.size10) : const SizedBox.shrink(),
-        (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1")
+        ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1") ? getSizedBox(height: Constant.size10) : const SizedBox.shrink(),
+        ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1")
             ? Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: GestureDetector(
@@ -974,10 +1017,10 @@ class _LoginAccountState extends State<LoginAccountScreen> {
         );
         return;
       }
-      if (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1") {
+      if ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1") {
         callLoginApi(null);
       } else {
-        if (context.read<AppSettingsProvider>().settingsData!.firebaseAuthentication == "1") {
+        if ((context.read<AppSettingsProvider>().settingsData?.firebaseAuthentication ?? "0") == "1") {
           try {
             await firebaseAuth.verifyPhoneNumber(
               timeout: Duration(minutes: 1, seconds: 30),
@@ -1162,7 +1205,7 @@ class _LoginAccountState extends State<LoginAccountScreen> {
     if (authProvider == AuthProviders.phone) {
       params[ApiAndParams.password] = editPhonePasswordTextEditingController.text.trim();
       params[ApiAndParams.phoneAuthType] =
-          (context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword == "1") ? "phone_auth_password" : "phone_auth_otp";
+          ((context.read<AppSettingsProvider>().settingsData?.phoneAuthPassword ?? "0") == "1") ? "phone_auth_password" : "phone_auth_otp";
     }
 
     await context.read<UserProfileProvider>().loginApi(context: context, params: params).then(

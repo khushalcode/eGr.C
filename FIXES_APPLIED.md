@@ -229,3 +229,122 @@ the first fix. Investigation showed:
   `loginAccountScreen` after logout (intentional — a logged-out user
   should explicitly choose to log in again or skip).
 - No changes were made to any payment / order / wallet code paths.
+
+---
+
+## v4 fixes (Sep 22, 2026 — crash on phone login + Sign in with Apple)
+
+Apple rejected the customer app AGAIN on Sep 22, 2026 with two new
+crashes on iPad Air 11-inch (M3) and iPhone 17 Pro Max running iOS 27.0:
+
+1. **Guideline 2.1(a) — App crashed** when typing a phone number and
+   tapping the Login button.
+2. **Guideline 2.1(a) — App Completeness bug** — "We were unable to
+   progress from the login page after using Sign in with Apple."
+
+### Root cause #1 — phone login crash
+
+The login screen accessed `context.read<AppSettingsProvider>().settingsData!.phoneAuthPassword`
+in 8 places using the `!` null-assertion operator. `settingsData` is a
+nullable `SettingsData?` field that is only populated AFTER the
+`AppSettingsProvider.getAppSettingsProvider()` async API call completes.
+
+When a user navigated directly to the login screen (e.g., from the cart
+"Login to checkout" button) and tapped Login before the settings had
+finished loading, `settingsData` was still `null` and `settingsData!.X`
+threw a null-check exception, crashing the app.
+
+The same `settingsData!` pattern existed in `editProfileScreen.dart`,
+`forgotPasswordScreen.dart`, and `otpVerificationScreen.dart`.
+
+Additionally, `_formKey.currentState!.save()` and `_formKey.currentState!.validate()`
+in the login button callback could crash if the form hadn't been built
+yet on slower iPad hardware.
+
+### Root cause #2 — Sign in with Apple hang
+
+The Apple Sign In button used `signInWithApple(...).then((value) {...})`
+with no `.catchError(...)` handler. If the user cancelled the Apple
+sign-in sheet (which throws `AuthorizationErrorCode.canceled`), or if
+`SignInWithApple.getAppleIDCredential` threw any other error (network
+failure, iOS 27 quirk, etc.), the `.then()` callback never ran and
+`isLoading` stayed `true` forever — the spinner spun forever and the
+user "could not progress from the login page".
+
+The underlying `signInWithApple` helper also had `!` null-assertions on
+`userCredential.additionalUserInfo!.isNewUser`, `userCredential.user!.displayName`,
+and `credential.identityToken` — all of which can be null on iOS 27 when
+the user re-authenticates with Face ID/Touch ID.
+
+### Fix applied (v4)
+
+1. **`lib/helper/utils/generalMethods.dart`** — `signInWithApple()`:
+   - Null-safe `credential.identityToken` (throw a friendly error if null)
+   - Null-safe `userCredential.additionalUserInfo` and `userCredential.user`
+   - Wrap `user.updateDisplayName(...)` in try/catch so a stale session
+     doesn't crash the whole sign-in flow.
+
+2. **`lib/screens/loginAccountScreen/loginAccountScreen.dart`**:
+   - Apple Sign In button: rewrote the `onPressed` callback to use
+     `try { await signInWithApple(...) } catch (e) { ... }` instead of
+     `.then()` with no error handler. The `catch` block clears
+     `isLoading` so the spinner never hangs. Cancels are silently
+     swallowed; real errors show a toast.
+   - Set `isLoading = true` BEFORE calling `signInWithApple` so the user
+     sees a spinner immediately when they tap the button.
+   - All 8 `settingsData!.X` accesses replaced with null-safe
+     `(settingsData?.X ?? "0")`. When settings haven't loaded, the safer
+     code path runs (treats phoneAuthPassword / firebaseAuthentication
+     as disabled, falls back to OTP-only flow).
+   - `proceedBtn` callback: null-safe `_formKey.currentState` — shows a
+     "something went wrong" toast instead of crashing if the form
+     hasn't been built yet.
+   - Wrapped the entire login callback in `try/catch` as a safety net
+     so ANY unexpected exception shows a toast instead of crashing.
+
+3. **`lib/screens/editProfileScreen.dart`** (registration form):
+   - All 5 `settingsData!.X` accesses replaced with null-safe versions.
+   - `_formKey.currentState!.save()` / `.validate()` made null-safe.
+
+4. **`lib/screens/forgotPasswordScreen.dart`**:
+   - All 3 `settingsData!.X` accesses replaced with null-safe versions.
+
+5. **`lib/screens/otpVerificationScreen.dart`**:
+   - All 4 `settingsData!.X` accesses replaced with null-safe versions.
+
+### Build number bumped again
+
+- `ios/Runner.xcodeproj/project.pbxproj` — `CURRENT_PROJECT_VERSION`
+  14 → 15 (all 3 configs: Debug / Release / Profile).
+- `pubspec.yaml` — `version: 5.0.0+2` → `version: 5.0.0+3`.
+
+This forces App Store Connect to require a fresh archive upload — the
+old build #14 will not be accepted.
+
+### Files changed (v4)
+
+| File | Change |
+|---|---|
+| `lib/helper/utils/generalMethods.dart` | `signInWithApple()` null-safe (identityToken, additionalUserInfo, user, updateDisplayName) |
+| `lib/screens/loginAccountScreen/loginAccountScreen.dart` | Apple Sign In button try/catch + null-safe settingsData (×8) + null-safe formKey + try/catch around login callback |
+| `lib/screens/editProfileScreen.dart` | null-safe settingsData (×5) + null-safe formKey |
+| `lib/screens/forgotPasswordScreen.dart` | null-safe settingsData (×3) |
+| `lib/screens/otpVerificationScreen.dart` | null-safe settingsData (×4) |
+| `ios/Runner.xcodeproj/project.pbxproj` | `CURRENT_PROJECT_VERSION` 14 → 15 |
+| `pubspec.yaml` | `version: 5.0.0+2` → `5.0.0+3` |
+
+### How to verify before re-submitting (v4 specific)
+
+On a physical iPad Air / iPhone 17 Pro Max (iOS 27):
+
+1. **Phone login crash**: Open the app → tap Profile → Login → type the
+   demo phone number → tap Login. The app should NOT crash even if
+   settings haven't loaded. If settings aren't loaded yet, you should
+   see a "something went wrong" toast, not a crash.
+2. **Sign in with Apple**: Tap "Continue with Apple" → cancel the Apple
+   sheet by tapping "Cancel". The spinner should disappear, the login
+   screen should be usable again (no infinite spinner).
+3. **Sign in with Apple (success path)**: Tap "Continue with Apple" →
+   complete the sign-in with a real Apple ID. The spinner should appear
+   briefly, then `backendApiProcess` should fire and take the user to
+   the registration / home screen.
