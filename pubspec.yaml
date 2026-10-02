@@ -4,7 +4,7 @@ description: A new Flutter project.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 #update version 2.1.4
 # TODO APP VERSION
-version: 9.0.0+3
+version: 19.0.0+3
 
 environment:
   sdk: '>=3.3.3 <4.0.0'
@@ -53,7 +53,6 @@ dependencies:
   firebase_analytics: ^12.0.4
   firebase_crashlytics: ^5.0.0
   google_sign_in: ^6.3.0 #^7.2.0
-  sign_in_with_apple: ^7.0.1
   quill_html_editor: ^2.2.8
   device_info_plus: ^12.1.0
   #paytm_allinonesdk: ^1.2.8

@@ -3,13 +3,13 @@ import 'package:project/models/PlaceDetailsModel.dart';
 enum NetworkStatus { online, offline }
 enum ThemeList { systemDefault, light, dark }
 class Constant {
-  static String hostUrl = "https://admin.bshgrocery.in/";
+  static String hostUrl = "https://admin.otwgrocers.com/";
   static bool _isLoggingOut = false;
-  static String websiteUrl = "https://bshgrocery.in/";
+  static String websiteUrl = "https://otwgrocers.com/";
   static String baseUrl = "${hostUrl}customer/";
-  static String packageName = "com.bshgrocery.customer";
+  static String packageName = "com.otwgrocers";
   static String appStoreUrl = "";
-  static String playStoreUrl = "https://play.google.com/store/apps/details?id=com.bshgrocery.customer";
+  static String playStoreUrl = "https://play.google.com/store/apps/details?id=$packageName";
   static String appName = "OTW Grocery App";
   static int minimumRequiredMobileNumberLength = 7;
   static int messageDisplayDuration = 3500;

@@ -17,16 +17,16 @@ communicating with Apple App Review, your backend admin, or testers.
 | **App Store name** | OTW Grocery App |
 | **Display name on device** | OTW Grocery App *(fixed — was "eGrocer")* |
 | **Bundle ID (iOS)** | `com.otwgrocers` |
-| **Package name (Android)** | `com.bshgrocery.customer` |
+| **Package name (Android)** | `com.otwgrocers` |
 | **App version (pubspec)** | `5.0.0+2` *(bumped from `5.0.0+1`)* |
 | **iOS build number (CURRENT_PROJECT_VERSION)** | `14` *(bumped from `13`)* |
 | **iOS MARKETING_VERSION** | `2.0.6` |
-| **Backend base URL** | `https://admin.bshgrocery.in/customer/` |
-| **Login API endpoint** | `POST https://admin.bshgrocery.in/customer/login` |
+| **Backend base URL** | `https://admin.otwgrocers.com/customer/` |
+| **Login API endpoint** | `POST https://admin.otwgrocers.com/customer/login` |
 | **Login request params** | `id`, `type` (`phone` / `email`), `platform` (`android` / `ios`), `fcmToken`, `password`, `phone_auth_type` (`phone_auth_password` or `phone_auth_otp`) |
 | **HTTP header** | `x-access-key: 903361`, `accept: application/json` |
-| **Shared `hostUrl`** | `https://admin.bshgrocery.in/` |
-| **Website** | `https://bshgrocery.in/` |
+| **Shared `hostUrl`** | `https://admin.otwgrocers.com/` |
+| **Website** | `https://otwgrocers.com/` |
 | **Apple review device** | iPhone 17 Pro Max and iPad Air 11-inch (M3) |
 
 ### Customer app — App Store review status
@@ -40,10 +40,10 @@ communicating with Apple App Review, your backend admin, or testers.
 ### Customer app — Demo credentials for Apple review
 
 > ⚠️ **Verified 2026-09-15 — these credentials returned `user_not_exist`
-> against the production backend at `admin.bshgrocery.in`.** The account
+> against the production backend at `admin.otwgrocers.com`.** The account
 > `8434207055` is NOT registered as a customer. Before submitting to Apple,
 > you MUST create this customer account in your admin panel
-> (`https://admin.bshgrocery.in/admin`) so Apple's reviewer can actually
+> (`https://admin.otwgrocers.com/admin`) so Apple's reviewer can actually
 > log in.
 
 ```
@@ -69,11 +69,11 @@ Login type   : phone (with phone_auth_password)
 | **App version (pubspec)** | `2.0.0+2` *(bumped from `2.0.0+1`)* |
 | **iOS build number (CURRENT_PROJECT_VERSION)** | `14` *(bumped from `13`)* |
 | **iOS MARKETING_VERSION** | `2.0.6` |
-| **Backend base URL** | `https://admin.bshgrocery.in/api/` |
-| **Login API endpoint** | `POST https://admin.bshgrocery.in/api/login` |
+| **Backend base URL** | `https://admin.otwgrocers.com/api/` |
+| **Login API endpoint** | `POST https://admin.otwgrocers.com/api/login` |
 | **Login request params** | `email`, `password`, `type` (`3` = seller, `4` = delivery boy), `fcmToken`, `platform` (`android` / `ios`) |
 | **HTTP header** | `x-access-key: 903361`, `accept: application/json` |
-| **Shared `hostUrl`** | `https://admin.bshgrocery.in/` |
+| **Shared `hostUrl`** | `https://admin.otwgrocers.com/` |
 | **Login type config** | `appLoginType = 3` (both sellers and delivery boys can log in) |
 | **TestFlight URL** | `https://testflight.apple.com/join/Bmx2ZdOf` |
 | **Apple review device** | iPhone 17 Pro Max and iPad Air 11-inch (M3) |
@@ -89,9 +89,9 @@ Login type   : phone (with phone_auth_password)
 
 > ⚠️ **Verified 2026-09-15 — these credentials returned
 > `User is not register with this email address!` against the production
-> backend at `admin.bshgrocery.in`.** The email `seller@gmail.com` is NOT
+> backend at `admin.otwgrocers.com`.** The email `seller@gmail.com` is NOT
 > registered as a seller. Before submitting to Apple, you MUST create this
-> seller account in your admin panel (`https://admin.bshgrocery.in/admin`)
+> seller account in your admin panel (`https://admin.otwgrocers.com/admin`)
 > so Apple's reviewer can actually log in.
 
 ```
@@ -108,7 +108,7 @@ Login type : 3 (seller)
 
 ## 3. Shared backend (both apps)
 
-Both apps share the same backend at `https://admin.bshgrocery.in/`:
+Both apps share the same backend at `https://admin.otwgrocers.com/`:
 
 | Endpoint | Used by | Path |
 |---|---|---|
@@ -117,7 +117,7 @@ Both apps share the same backend at `https://admin.bshgrocery.in/`:
 | Customer reset password | Customer app | `POST /customer/reset_password` |
 | Partner / delivery boy login | Partners app | `POST /api/login` |
 | Partner profile | Partners app | `GET /api/sellers/edit-profile/{id}` or `/api/delivery_boys/edit-profile/{id}` |
-| Admin panel (create accounts here) | You | `https://admin.bshgrocery.in/admin` |
+| Admin panel (create accounts here) | You | `https://admin.otwgrocers.com/admin` |
 
 ---
 
@@ -125,7 +125,7 @@ Both apps share the same backend at `https://admin.bshgrocery.in/`:
 
 1. **Create the demo accounts on your backend** (this is the missing step
    that caused both credential checks to fail):
-   - Log in to `https://admin.bshgrocery.in/admin`
+   - Log in to `https://admin.otwgrocers.com/admin`
    - Create a customer account with phone `8434207055` and password
      `Testnew@123` (used by Apple to review the **customer app**)
    - Create a seller account with email `seller@gmail.com` and password
@@ -133,14 +133,14 @@ Both apps share the same backend at `https://admin.bshgrocery.in/`:
    - Verify both accounts can log in successfully via the API:
      ```bash
      # Customer app check
-     curl -X POST https://admin.bshgrocery.in/customer/login \
+     curl -X POST https://admin.otwgrocers.com/customer/login \
        -H 'x-access-key: 903361' \
        -d 'id=8434207055' -d 'type=phone' \
        -d 'password=Testnew@123' -d 'phone_auth_type=phone_auth_password' \
        -d 'platform=ios'
 
      # Partners app check
-     curl -X POST https://admin.bshgrocery.in/api/login \
+     curl -X POST https://admin.otwgrocers.com/api/login \
        -H 'x-access-key: 903361' \
        -d 'email=seller@gmail.com' -d 'password=12345678' \
        -d 'type=3' -d 'platform=ios'

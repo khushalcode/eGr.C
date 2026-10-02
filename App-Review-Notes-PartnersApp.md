@@ -83,7 +83,7 @@ just attach the screen recording and submit.
 > be deactivated within 24 hours of approval.
 >
 > **Login API used by the app:**
-> - Endpoint: `POST https://admin.bshgrocery.in/api/login`
+> - Endpoint: `POST https://admin.otwgrocers.com/api/login`
 > - Headers: `x-access-key: 903361`, `accept: application/json`
 > - Body params: `email`, `password`, `type` (3 = seller, 4 = delivery
 >   boy), `fcmToken`, `platform`
@@ -100,7 +100,7 @@ just attach the screen recording and submit.
 > - **Google Maps Platform (Maps SDK, Distance Matrix API)** — used by
 >   delivery partners for navigation and ETA calculation.
 > - **OTW Grocers Backend API** (owned by the developer, hosted at
->   `https://admin.bshgrocery.in/`) — order data, product catalogue,
+>   `https://admin.otwgrocers.com/`) — order data, product catalogue,
 >   partner earnings, withdrawal requests, fund transfers.
 > - **Google Gemini AI** *(optional, used in product description
 >   generator)* — generates HTML product descriptions from custom
@@ -167,7 +167,7 @@ just attach the screen recording and submit.
 ## IMPORTANT — Before you submit
 
 ⚠️ **On 2026-09-15, I tested the demo credentials against the production
-backend at `https://admin.bshgrocery.in/api/login` and received:**
+backend at `https://admin.otwgrocers.com/api/login` and received:**
 
 ```json
 {"status":0,"message":"User is not register with this email address!"}
@@ -176,7 +176,7 @@ backend at `https://admin.bshgrocery.in/api/login` and received:**
 This means the email `seller@gmail.com` is **NOT registered** on your
 backend yet. Before you submit the Partners app to Apple, you MUST:
 
-1. Log in to your admin panel at `https://admin.bshgrocery.in/admin`
+1. Log in to your admin panel at `https://admin.otwgrocers.com/admin`
 2. Create a new seller account with:
    - Email: `seller@gmail.com`
    - Password: `12345678`
@@ -184,7 +184,7 @@ backend yet. Before you submit the Partners app to Apple, you MUST:
    - All required seller details (name, store name, bank details, etc.)
 3. Verify the credentials work by running:
    ```bash
-   curl -X POST https://admin.bshgrocery.in/api/login \
+   curl -X POST https://admin.otwgrocers.com/api/login \
      -H 'x-access-key: 903361' \
      -d 'email=seller@gmail.com' \
      -d 'password=12345678' \

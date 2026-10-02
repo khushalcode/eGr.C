@@ -203,7 +203,7 @@ class SessionManager extends ChangeNotifier {
     } else if (getData(keyLoginType) == "google") {
       _authProvider = AuthProviders.google;
     } else {
-      _authProvider = AuthProviders.apple;
+      _authProvider = AuthProviders.emailPassword;
     }
 
     buildContext.read<CartProvider>().resetCartList();
@@ -253,7 +253,7 @@ class SessionManager extends ChangeNotifier {
     } else if (getData(keyLoginType) == "google") {
       authProvider = AuthProviders.google;
     } else {
-      authProvider = AuthProviders.apple;
+      authProvider = AuthProviders.emailPassword;
     }
     showDialog<String>(
       context: buildContext,

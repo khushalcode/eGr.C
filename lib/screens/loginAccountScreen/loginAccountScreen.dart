@@ -2,7 +2,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:project/helper/utils/generalImports.dart';
 import 'package:project/helper/utils/keyboardOverlay.dart';
 
-enum AuthProviders { phone, google, apple, emailPassword }
+enum AuthProviders { phone, google, emailPassword }
 
 class LoginAccountScreen extends StatefulWidget {
   final String? from;
@@ -35,7 +35,7 @@ class _LoginAccountState extends State<LoginAccountScreen> {
           ? AuthProviders.emailPassword
           : Constant.authTypeGoogleLogin == "1"
               ? AuthProviders.google
-              : AuthProviders.apple;
+              : AuthProviders.emailPassword;
 
   final _formKey = GlobalKey<FormState>();
   String? fcmToken = "";
@@ -318,65 +318,8 @@ class _LoginAccountState extends State<LoginAccountScreen> {
                   ),
                 ),
                 getSizedBox(height: Constant.size20),
-                if (Platform.isIOS && Constant.authTypeAppleLogin == "1" || Constant.authTypeGoogleLogin == "1") buildDottedDivider(context),
+                if (Constant.authTypeGoogleLogin == "1") buildDottedDivider(context),
                 getSizedBox(height: Constant.size20),
-              ],
-              if (Platform.isIOS && Constant.authTypeAppleLogin == "1") ...[
-                Padding(
-                  padding: EdgeInsetsDirectional.only(start: 20, end: 20),
-                  child: SocialMediaLoginButtonWidget(
-                    text: continueWithAppleLabel,
-                    logo: AppAssets.appleLogoIcon,
-                    logoColor: ColorsRes.mainTextColor,
-                    onPressed: () async {
-                      setState(() {
-                        authProvider = AuthProviders.apple;
-                      });
-                      // [iPad/iOS 27 crash fix] show loading spinner BEFORE
-                      // the Apple sign-in sheet appears, so the user gets
-                      // feedback that something is happening.
-                      setState(() {
-                        isLoading = true;
-                      });
-                      try {
-                        final value = await signInWithApple(
-                          context: context,
-                          firebaseAuth: firebaseAuth,
-                          googleSignIn: googleSignIn,
-                        );
-                        debugPrint("applelogindetail:${value.runtimeType}--$value");
-                        if (!mounted) return;
-                        setState(() {
-                          isLoading = false;
-                        });
-                        if (value is UserCredential) {
-                          debugPrint("applelogindetailinsidetypecasting:${value.runtimeType}--$value");
-                          backendApiProcess(value.user);
-                        } else {
-                          showMessage(context, value.toString(), MessageType.error);
-                        }
-                      } catch (e) {
-                        // [iPad/iOS 27 crash fix] handle the user cancelling
-                        // the Apple sign-in sheet, network errors, null
-                        // identity tokens, etc. — without this catch the
-                        // spinner spins forever ("unable to progress").
-                        if (!mounted) return;
-                        setState(() {
-                          isLoading = false;
-                        });
-                        final errStr = e.toString();
-                        // Don't show an error toast if the user explicitly
-                        // cancelled the sign-in sheet.
-                        if (!errStr.contains('AuthorizationErrorCode.canceled') &&
-                            !errStr.contains('Cancel') &&
-                            !errStr.contains('canceled')) {
-                          showMessage(context, errStr, MessageType.error);
-                        }
-                      }
-                    },
-                  ),
-                ),
-                getSizedBox(height: 10),
               ],
               if (Constant.authTypeGoogleLogin == "1")
                 Padding(
@@ -1190,11 +1133,9 @@ class _LoginAccountState extends State<LoginAccountScreen> {
           ? "phone"
           : authProvider == AuthProviders.google
               ? "google"
-              : authProvider == AuthProviders.apple
-                  ? "apple"
-                  : authProvider == AuthProviders.emailPassword
-                      ? "email"
-                      : "",
+              : authProvider == AuthProviders.emailPassword
+                  ? "email"
+                  : "",
       ApiAndParams.platform: Platform.isAndroid ? "android" : "ios",
       ApiAndParams.fcmToken: fcmToken ?? "",//Constant.session.getData(SessionManager.keyFCMToken),
     };
@@ -1292,7 +1233,7 @@ class _LoginAccountState extends State<LoginAccountScreen> {
                       ? "phone"
                       : authProvider == AuthProviders.google
                           ? "google"
-                          : "apple",
+                          : "email",
                   ApiAndParams.name: firebaseAuth.currentUser!.displayName ?? "",
                   ApiAndParams.email: firebaseAuth.currentUser!.email ?? "",
                   ApiAndParams.countryCode: "",
