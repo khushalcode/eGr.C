@@ -1,0 +1,190 @@
+import 'package:project/helper/utils/constant.dart';
+
+class ProductListItem {
+  String? id;
+  String? sellerId;
+  String? name;
+  String? averageRating;
+  String? ratingCount;
+  String? taxId;
+  String? brandId;
+  String? slug;
+  String? categoryId;
+  String? indicator;
+  String? manufacturer;
+  String? madeIn;
+  String? status;
+  String? isUnlimitedStock;
+  String? totalAllowedQuantity;
+  String? taxIncludedInPrice;
+  String? longitude;
+  String? latitude;
+  String? maxDeliverableDistance;
+  bool? isDeliverable;
+  bool? isFavorite;
+  List<Variants>? variants;
+  String? imageUrl;
+  bool? productRating;
+
+  ProductListItem(
+      {this.id,
+      this.sellerId,
+      this.name,
+      this.averageRating,
+      this.ratingCount,
+      this.taxId,
+      this.brandId,
+      this.slug,
+      this.categoryId,
+      this.indicator,
+      this.manufacturer,
+      this.madeIn,
+      this.status,
+      this.isUnlimitedStock,
+      this.totalAllowedQuantity,
+      this.taxIncludedInPrice,
+      this.longitude,
+      this.latitude,
+      this.maxDeliverableDistance,
+      this.isDeliverable,
+      this.isFavorite,
+      this.variants,
+      this.imageUrl,
+      this.productRating});
+
+  ProductListItem.fromJson(Map<String, dynamic> json) {
+    id = json['id'].toString();
+    sellerId = json['seller_id'].toString();
+    name = json['name'].toString();
+    averageRating = json['average_rating'].toString();
+    ratingCount = json['rating_count'].toString();
+    taxId = json['tax_id'].toString();
+    brandId = json['brand_id'].toString();
+    slug = json['slug'].toString();
+    categoryId = json['category_id'].toString();
+    indicator = json['indicator'].toString();
+    manufacturer = json['manufacturer'].toString();
+    madeIn = json['made_in'].toString();
+    status = json['status'].toString();
+    isUnlimitedStock = json['is_unlimited_stock'].toString();
+    totalAllowedQuantity = json['total_allowed_quantity'].toString();
+    taxIncludedInPrice = json['tax_included_in_price'].toString();
+    longitude = json['longitude'].toString();
+    latitude = json['latitude'].toString();
+    maxDeliverableDistance = json['max_deliverable_distance'].toString();
+    isDeliverable = json['is_deliverable'];
+    isFavorite = json['is_favorite'];
+    /* if (json['variants'] != null) {
+      variants = <Variants>[];
+      json['variants'].forEach((v) {
+        variants!.add(new Variants.fromJson(v));
+      });
+    } */
+    if (json['variants'] != null) {
+      variants = <Variants>[];
+      json['variants'].forEach((v) {
+        variants!.add(Variants.fromJson(v));
+      });
+
+      // Automatically reorder after parsing
+      variants = [
+        ...variants!.where((v) => v.status != "0"), // Active on top
+        ...variants!.where((v) => v.status == "0"), // Inactive at end
+      ];
+    }
+    imageUrl = json['image_url'].toString();
+    productRating = Constant.parseBool(json['product_rating']);
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['id'] = this.id;
+    data['seller_id'] = this.sellerId;
+    data['name'] = this.name;
+    data['average_rating'] = this.averageRating;
+    data['rating_count'] = this.ratingCount;
+    data['tax_id'] = this.taxId;
+    data['brand_id'] = this.brandId;
+    data['slug'] = this.slug;
+    data['category_id'] = this.categoryId;
+    data['indicator'] = this.indicator;
+    data['manufacturer'] = this.manufacturer;
+    data['made_in'] = this.madeIn;
+    data['status'] = this.status;
+    data['is_unlimited_stock'] = this.isUnlimitedStock;
+    data['total_allowed_quantity'] = this.totalAllowedQuantity;
+    data['tax_included_in_price'] = this.taxIncludedInPrice;
+    data['longitude'] = this.longitude;
+    data['latitude'] = this.latitude;
+    data['max_deliverable_distance'] = this.maxDeliverableDistance;
+    data['is_deliverable'] = this.isDeliverable;
+    data['is_favorite'] = this.isFavorite;
+    if (this.variants != null) {
+      data['variants'] = this.variants!.map((v) => v.toJson()).toList();
+    }
+    data['image_url'] = this.imageUrl;
+    data['product_rating'] = productRating;
+    return data;
+  }
+}
+
+class Variants {
+  String? id;
+  String? type;
+  String? status;
+  String? measurement;
+  String? price;
+  String? discountedPrice;
+  String? stock;
+  String? stockUnitName;
+  String? isUnlimitedStock;
+  String? cartCount;
+  String? taxableAmount;
+  bool? fewQuantityLeft;
+
+  Variants(
+      {this.id,
+      this.type,
+      this.status,
+      this.measurement,
+      this.price,
+      this.discountedPrice,
+      this.stock,
+      this.stockUnitName,
+      this.isUnlimitedStock,
+      this.cartCount,
+      this.taxableAmount,
+      this.fewQuantityLeft});
+
+  Variants.fromJson(Map<String, dynamic> json) {
+    id = json['id'].toString();
+    type = json['type'].toString();
+    status = json['status'].toString();
+    measurement = json['measurement'].toString();
+    price = json['price'].toString();
+    discountedPrice = json['discounted_price'].toString();
+    stock = json['stock'].toString();
+    stockUnitName = json['stock_unit_name'].toString();
+    isUnlimitedStock = json['is_unlimited_stock'].toString();
+    cartCount = json['cart_count'].toString();
+    taxableAmount = json['taxable_amount'].toString();
+    fewQuantityLeft =  Constant.parseBool(json['few_quantity_left']);
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['id'] = this.id;
+    data['type'] = this.type;
+    data['status'] = this.status;
+    data['measurement'] = this.measurement;
+    data['price'] = this.price;
+    data['discounted_price'] = this.discountedPrice;
+    data['stock'] = this.stock;
+    data['stock_unit_name'] = this.stockUnitName;
+    data['is_unlimited_stock'] = this.isUnlimitedStock;
+    data['cart_count'] = this.cartCount;
+    data['taxable_amount'] = this.taxableAmount;
+    data['few_quantity_left'] = this.fewQuantityLeft;
+    return data;
+  }
+}

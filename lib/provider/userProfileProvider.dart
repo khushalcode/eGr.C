@@ -1,0 +1,401 @@
+import 'package:project/helper/utils/generalImports.dart';
+
+import 'package:project/models/userProfile.dart';
+
+enum ProfileState { initial, loading, loaded }
+
+class UserProfileProvider extends ChangeNotifier {
+  ProfileState profileState = ProfileState.initial;
+
+  Future updateUserProfile({required BuildContext context, required String selectedImagePath, required Map<String, String> params}) async {
+    var returnValue;
+    try {
+      profileState = ProfileState.loading;
+      notifyListeners();
+
+      List<String> fileParamsNames = [];
+      List<String> fileParamsFilesPath = [];
+      if (selectedImagePath.isNotEmpty) {
+        fileParamsNames.add(ApiAndParams.profile);
+        fileParamsFilesPath.add(selectedImagePath);
+      }
+
+      await getUpdateProfileApi(
+              apiName: ApiAndParams.apiUpdateProfile,
+              params: params,
+              fileParamsNames: fileParamsNames,
+              fileParamsFilesPath: fileParamsFilesPath,
+              context: context)
+          .then(
+        (value) async {
+          if (value != {}) {
+            if (value.isNotEmpty) {
+              if (value[ApiAndParams.status].toString() == "1") {
+                await getUserDetail(context: context).then(
+                  (value) {
+                    if (value[ApiAndParams.status].toString() == "1") {
+                      context.read<UserProfileProvider>().updateUserDataInSession(value, context);
+                    }
+                  },
+                ).then(
+                  (value) {
+                    returnValue = true;
+                  },
+                );
+              } else {
+                showMessage(
+                  context,
+                  value[ApiAndParams.message],
+                  MessageType.warning,
+                );
+                profileState = ProfileState.loaded;
+                notifyListeners();
+
+                returnValue = value[ApiAndParams.message];
+              }
+            }
+          } else {
+            showMessage(
+              context,
+              value[ApiAndParams.message],
+              MessageType.warning,
+            );
+            profileState = ProfileState.loaded;
+            notifyListeners();
+
+            returnValue = value;
+          }
+        },
+      );
+    } catch (e) {
+      showMessage(context, e.toString(), MessageType.warning);
+      profileState = ProfileState.loaded;
+      notifyListeners();
+      returnValue = "";
+    }
+    return returnValue;
+  }
+
+  Future<int?> loginApi({required BuildContext context, required Map<String, String> params}) async {
+    int status = 0;
+    //status = 0//error
+    //sttaus = 1//verify use successfull
+    //status = 2//email_not_verified
+    //status = 3//user_exist_password_blank
+    try {
+      UserProfile? userProfile;
+      await getLoginApi(context: context, params: params).then((mainData) async {
+        userProfile = UserProfile.fromJson(mainData);
+        if (mainData[ApiAndParams.status].toString() == "1") {
+          if (userProfile?.data != null) {
+            userProfile = UserProfile.fromJson(mainData);
+            if (userProfile?.status.toString() == "1") {
+              await setUserDataInSession(mainData, context);
+            }
+            status = 1;
+          } else {
+            status = 0;
+          }
+          if (mainData[ApiAndParams.message].toString() == "user_deactivated") {
+            status = 5;
+          }
+        } else if (mainData[ApiAndParams.message].toString() == "email_not_verified") {
+          showMessage(context, getTranslatedValue(context, mainData[ApiAndParams.message].toString()), MessageType.warning);
+          status = 2;
+        } else if (mainData[ApiAndParams.message].toString() == "user_exist_with_google") {
+          // showMessage(context, getTranslatedValue(context, mainData[ApiAndParams.message].toString()), MessageType.warning);
+          status = 6;
+        } else if (mainData[ApiAndParams.message].toString() == "user_exist_password_blank") {
+          status = 3;
+        } else if (mainData[ApiAndParams.message].toString() == "invalid_password") {
+          showMessage(context, getTranslatedValue(context, mainData[ApiAndParams.message].toString()), MessageType.warning);
+          status = 4;
+        } else {
+          status = 0;
+        }
+      });
+    } catch (e) {
+      status = 0;
+      debugPrint("userProfile?.data != null:${e}");
+    }
+    return status;
+  }
+
+  Future sendCustomOTPSmsProvider({required BuildContext context, required Map<String, String> params}) async {
+    try {
+      Map<String, dynamic> data = await sendCustomOTPSmsApi(context: context, params: params);
+
+      return data[ApiAndParams.status].toString();
+    } catch (e) {
+      return "0";
+    }
+  }
+
+  Future verifyUserProvider({required BuildContext context, required Map<String, String> params}) async {
+    try {
+      Map<String, dynamic> data = await getUserVerifyApi(context: context, params: params);
+
+      return data;
+    } catch (e) {
+      return "0";
+    }
+  }
+
+  Future verifyUserExistProvider({required BuildContext context, required Map<String, String> params}) async {
+    try {
+      Map<String, dynamic> data = await getVerifyUserExistApi(context: context, params: params);
+
+      return data;
+    } catch (e) {
+      return "0";
+    }
+  }
+
+  Future changePasswordProvider({required BuildContext context, required Map<String, String> params}) async {
+    try {
+      Map<String, dynamic> data = await changePasswordApi(context: context, params: params);
+
+      return data;
+    } catch (e) {
+      return "0";
+    }
+  }
+
+  Future<String> registerAccountApi({required BuildContext context, required Map<String, String> params}) async {
+    profileState = ProfileState.loading;
+    notifyListeners();
+    String status = "0";
+    await getRegisterApi(context: context, params: params).then((mainData) async {
+      if (mainData[ApiAndParams.status].toString() == "1") {
+        if (!mainData.containsKey("data") && mainData[ApiAndParams.message].toString() == "verification_mail_sent_successfully") {
+          status = "1";
+          profileState = ProfileState.loaded;
+          notifyListeners();
+          showMessage(
+            context,
+            getTranslatedValue(context, verificationMailSentLabel),
+            MessageType.success,
+          );
+        } else {
+          UserProfile userProfile = UserProfile.fromJson(mainData);
+          if (mainData[ApiAndParams.message].toString() == "success") {
+            await setUserDataInSession(mainData, context).then((value) {
+              Navigator.of(context).pushNamedAndRemoveUntil(mainHomeScreen, (Route<dynamic> route) => false);
+            });
+          }
+          if (userProfile.status.toString() == "1") {
+            await setUserDataInSession(mainData, context);
+            showMessage(
+              context,
+              getTranslatedValue(context, mainData[ApiAndParams.message]),
+              MessageType.success,
+            );
+            status = userProfile.status ?? "0";
+          } else {
+            showMessage(
+              context,
+              getTranslatedValue(context, mainData[ApiAndParams.message]),
+              MessageType.warning,
+            );
+            status = "0";
+          }
+          profileState = ProfileState.loaded;
+          notifyListeners();
+        }
+      } else {
+        status = "0";
+        if (mainData[ApiAndParams.message].toString() == "user_already_exist") {
+          showMessage(
+            context,
+            getTranslatedValue(context, getTranslatedValue(context, mainData[ApiAndParams.message])),
+            MessageType.warning,
+          );
+        } else {
+          showMessage(
+            context,
+            getTranslatedValue(context, getTranslatedValue(context, mainData[ApiAndParams.message])),
+            MessageType.warning,
+          );
+        }
+        profileState = ProfileState.loaded;
+        notifyListeners();
+      }
+    });
+    profileState = ProfileState.loaded;
+    notifyListeners();
+    return status;
+  }
+
+  Future<bool> verifyRegisteredEmailProvider({required BuildContext context, required Map<String, String> params, required String from}) async {
+    return await verifyRegisteredEmailApi(context: context, params: params).then(
+      (mainData) async {
+        if (mainData[ApiAndParams.status].toString() == "1") {
+          showMessage(
+            context,
+            getTranslatedValue(context, mainData[ApiAndParams.message]),
+            MessageType.success,
+          );
+          if (mainData[ApiAndParams.message].toString() == "success") {
+            await setUserDataInSession(mainData, context).then((value) {
+              Navigator.of(context).pushNamedAndRemoveUntil(mainHomeScreen, (Route<dynamic> route) => false);
+            });
+          }
+          return true;
+        } else {
+          showMessage(
+            context,
+            getTranslatedValue(context, mainData[ApiAndParams.message]),
+            MessageType.warning,
+          );
+        }
+        return false;
+      },
+    );
+  }
+
+  Future setUserDataInSession(Map<String, dynamic> mainData, BuildContext context) async {
+    // [v5 null-safety] The backend may return a user object that is missing
+    // optional fields (status, balance, type, access_token, etc.). The
+    // previous code used `as Map<String, dynamic>` casts that throw a
+    // TypeError if the value is null, and `int.parse("null")` which throws
+    // a FormatException. Both crashed the app immediately after a successful
+    // login on iPad/iOS 27. Use null-safe accessors and tryParse instead.
+    final dynamic rawData = mainData[ApiAndParams.data];
+    if (rawData == null || rawData is! Map<String, dynamic>) {
+      profileState = ProfileState.loaded;
+      notifyListeners();
+      return;
+    }
+    final Map<String, dynamic> data = rawData;
+    final dynamic rawUser = data[ApiAndParams.user];
+    if (rawUser == null || rawUser is! Map<String, dynamic>) {
+      profileState = ProfileState.loaded;
+      notifyListeners();
+      return;
+    }
+    final Map<String, dynamic> userData = rawUser;
+
+    final String nameStr = (userData[ApiAndParams.name] ?? "").toString();
+    final String emailStr = (userData[ApiAndParams.email] ?? "").toString();
+    final String profileStr = (userData[ApiAndParams.profile] ?? "").toString();
+    final String countryCodeStr = (userData[ApiAndParams.countryCode] ?? "").toString();
+    final String mobileStr = (userData[ApiAndParams.mobile] ?? "").toString();
+    final String referralCodeStr = (userData[ApiAndParams.referralCode] ?? "").toString();
+    final String balanceStr = (userData[ApiAndParams.balance] ?? "0").toString();
+    final String typeStr = (userData[ApiAndParams.type] ?? "").toString();
+    final String tokenStr = (data[ApiAndParams.accessToken] ?? "").toString();
+    final int statusInt = int.tryParse((userData[ApiAndParams.status] ?? "0").toString()) ?? 0;
+
+    final String finalMobile = mobileStr.isNotEmpty ? mobileStr : Constant.session.getData(SessionManager.keyPhone);
+
+    Constant.session.setBoolData(SessionManager.isUserLogin, true, false);
+
+    Constant.session.setUserData(
+      context: context,
+      name: nameStr,
+      email: emailStr,
+      profile: profileStr,
+      countryCode: countryCodeStr,
+      mobile: finalMobile,
+      referralCode: referralCodeStr,
+      status: statusInt,
+      token: tokenStr,
+      balance: balanceStr,
+      type: typeStr,
+    );
+    profileState = ProfileState.loaded;
+    notifyListeners();
+  }
+
+  Future updateUserDataInSession(Map<String, dynamic> mainData, BuildContext context) async {
+    // [v5 null-safety] Same hardening as setUserDataInSession — backend
+    // may return a user object missing optional fields.
+    final dynamic rawUser = mainData[ApiAndParams.user];
+    if (rawUser == null || rawUser is! Map<String, dynamic>) {
+      profileState = ProfileState.loaded;
+      notifyListeners();
+      return;
+    }
+    final Map<String, dynamic> userData = rawUser;
+
+    Constant.session.setUserData(
+      context: context,
+      name: (userData[ApiAndParams.name] ?? "").toString(),
+      email: (userData[ApiAndParams.email] ?? "").toString(),
+      profile: (userData[ApiAndParams.profile] ?? "").toString(),
+      countryCode: (userData[ApiAndParams.countryCode] ?? "").toString(),
+      mobile: (userData[ApiAndParams.mobile] ?? "").toString(),
+      referralCode: (userData[ApiAndParams.referralCode] ?? "").toString(),
+      status: int.tryParse((userData[ApiAndParams.status] ?? "0").toString()) ?? 0,
+      token: Constant.session.getData(SessionManager.keyToken),
+      balance: (userData[ApiAndParams.balance] ?? "0").toString(),
+      type: Constant.session.getData(SessionManager.keyLoginType),
+    );
+
+    // Save subscription data to session
+    if (userData['is_subscription_plans'] != null) {
+      Constant.session.setBoolData(
+        SessionManager.keyIsSubscriptionPlans,
+        userData['is_subscription_plans'] == true ||
+        userData['is_subscription_plans'].toString() == '1' ||
+        userData['is_subscription_plans'].toString().toLowerCase() == 'true',
+        false
+      );
+    }
+
+    if (userData['has_active_subscription'] != null) {
+      Constant.session.setData(
+        SessionManager.keyHasActiveSubscription,
+        userData['has_active_subscription'].toString(),
+        false
+      );
+    }
+
+    if (userData['subscription_name'] != null) {
+      Constant.session.setData(
+        SessionManager.keySubscriptionName,
+        userData['subscription_name'].toString(),
+        false
+      );
+    }
+
+    if (userData['subscription_expiry_date'] != null) {
+      Constant.session.setData(
+        SessionManager.keySubscriptionExpiryDate,
+        userData['subscription_expiry_date'].toString(),
+        false
+      );
+    }
+
+    profileState = ProfileState.loaded;
+    notifyListeners();
+  }
+
+  getUserDetailBySessionKey({required bool isBool, required String key}) {
+    return isBool == true ? Constant.session.getBoolData(key) : Constant.session.getData(key);
+  }
+
+  changeState() {
+    profileState = ProfileState.initial;
+    notifyListeners();
+  }
+}
+
+void sendOTPForgotPassword(BuildContext context, String email) async {
+  try {
+    Map<String, dynamic> data = await sendCustomOTPSmsApi(context: context, params: {ApiAndParams.email: email});
+
+    if (data[ApiAndParams.status].toString() == "1") {
+      showMessage(
+        context,
+        getTranslatedValue(
+          context,
+          otpSendMessageLabel,
+        ),
+        MessageType.warning,
+      );
+    }
+  } catch (e) {
+    rethrow;
+  }
+}
