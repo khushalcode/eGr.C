@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:project/helper/utils/generalImports.dart';
 import 'package:project/models/PlaceDetailsModel.dart';
-import 'package:project/models/placeSuggestionsModel.dart';
+import 'package:project/models/placeSuggestionsModel.dart' hide Text;
 
 
 enum MessageType { success, error, warning }
