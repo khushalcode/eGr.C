@@ -33,7 +33,7 @@ import UserNotifications
         // — on iPad/iOS 27 this previously led to a crash inside the
         // Overlay toast path. Bridging the APNs token lets Firebase complete
         // the silent push and (when applicable) auto-retrieve the SMS code.
-        FirebaseMessaging.delegate = self
+        FirebaseMessaging.messaging().delegate = self
 
         //<!--TODO REPLACE IOS APP NAME HERE-->
         // Initialize Google Maps
@@ -56,7 +56,7 @@ import UserNotifications
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        Messaging.apnsToken = deviceToken
+        Messaging.messaging().apnsToken = deviceToken
         super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
     }
 
